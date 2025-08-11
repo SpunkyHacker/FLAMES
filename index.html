@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FLAMES Game</title>
+</head>
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playwrite+AU+QLD:wght@100..400&display=swap');
+    h1{
+          font-family: "Playwrite AU QLD";
+  font-optical-sizing: auto;
+    }
+    p{
+                  font-family: "Playwrite AU QLD";
+  font-optical-sizing: auto;
+    }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, 16px; padding: 24px; max-width:720px; margin:auto; background-color: pink;}
+    input { padding:8px; width:100%; box-sizing:border-box; margin:6px 0 12px; border-radius:15px; background-color: rgb(200, 234, 255)}
+    button { padding:10px 14px; cursor:pointer; border-radius: 15px;  background-color: rgb(184, 107, 122); color: white;}
+    .result { margin-top:18px; font-weight:600; }
+    .explain { color:#fbfbfb; margin-top:8px; font-size:0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Flames</h1>
+  <p><b>Enter two names and click</b> <strong>Check</strong>.</p>
+
+  <label>First name</label>
+  <input id="name1" placeholder="e.g. Alice" />
+
+  <label>Second name</label>
+  <input id="name2" placeholder="e.g. Bob" />
+
+  <div>
+    <button id="runBtn">Check</button>
+    <button id="clearBtn" style="margin-left:8px">Clear</button>
+  </div>
+
+  <div class="result" id="resultArea"></div>
+  <div class="explain" id="explainArea"></div>
+
+  <script>
+    // Normalize input: convert to lowercase, remove non-letter characters (keeps a-z only)
+    function normalize(name) {
+      return (name || '').toLowerCase().replace(/[^a-z]/g, '');
+    }
+
+    // Count unmatched letters between two names using frequency difference
+    function unmatchedCount(n1, n2) {
+      const a = normalize(n1);
+      const b = normalize(n2);
+
+      // build frequency maps
+      const freqA = {};
+      const freqB = {};
+      for (const ch of a) freqA[ch] = (freqA[ch] || 0) + 1;
+      for (const ch of b) freqB[ch] = (freqB[ch] || 0) + 1;
+
+      // sum absolute differences
+      let total = 0;
+      const letters = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+      for (const ch of letters) {
+        const fa = freqA[ch] || 0;
+        const fb = freqB[ch] || 0;
+        total += Math.abs(fa - fb);
+      }
+      return total;
+    }
+
+    // Perform FLAMES elimination and return relationship string
+    function flamesResult(name1, name2) {
+      const count = unmatchedCount(name1, name2);
+
+      if (!normalize(name1).length || !normalize(name2).length) {
+        return { result: null, reason: 'Please enter both names (letters only).' };
+      }
+
+      if (count === 0) {
+        // All letters matched — classic games often say "Siblings" or "Everything matched".
+        // We'll return a friendly message.
+        return { result: 'All letters matched — very close!', reason: `Unmatched count = ${count}` };
+      }
+
+      const flames = ['F','L','A','M','E','S'];
+      let idx = 0; // starting index
+
+      // We repeatedly remove one letter from 'flames' using count
+      while (flames.length > 1) {
+        // index to remove: (current index + count - 1) % length
+        // (we use -1 because counting starts from current position as 1)
+        idx = (idx + count - 1) % flames.length;
+        flames.splice(idx, 1); // remove element at idx
+        // next round starts at the same idx (because array shifts left)
+        // so we don't need to modify idx further
+      }
+
+      const mapping = {
+        'F': 'Friends',
+        'L': 'Love',
+        'A': 'Affection',
+        'M': 'Marriage',
+        'E': 'Enemies',
+        'S': 'Siblings'
+      };
+
+      const finalLetter = flames[0];
+      return { result: mapping[finalLetter], reason: `Unmatched count = ${count} (final: ${finalLetter})` };
+    }
+
+    // Hook up UI
+    document.getElementById('runBtn').addEventListener('click', () => {
+      const n1 = document.getElementById('name1').value;
+      const n2 = document.getElementById('name2').value;
+      const out = flamesResult(n1, n2);
+
+      const resultArea = document.getElementById('resultArea');
+      const explainArea = document.getElementById('explainArea');
+
+      if (!out.result) {
+        resultArea.textContent = out.reason;
+        explainArea.textContent = '';
+      } else {
+        resultArea.textContent = `Result: ${out.result}`;
+        explainArea.textContent = out.reason;
+      }
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('name1').value = '';
+      document.getElementById('name2').value = '';
+      document.getElementById('resultArea').textContent = '';
+      document.getElementById('explainArea').textContent = '';
+    });
+
+    // --- Optional: quick console tests for developers ---
+    // console.log(flamesResult('Alice', 'Bob'));      // e.g. "Friends" or something
+    // console.log(flamesResult('Harry', 'Sally'));   // try different names
+  </script>
+</body>
+</html>
